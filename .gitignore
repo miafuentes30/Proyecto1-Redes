@@ -209,6 +209,16 @@ tempCodeRunnerFile.py
 # PyPI configuration file
 .pypirc
 
+# Datos y registros generados localmente
+database/*.db
+database/*.sqlite
+database/*.sqlite3
+logs/*.log
+
+# Mantener las carpetas vacías en Git
+!database/.gitkeep
+!logs/.gitkeep
+
 # Marimo
 marimo/_static/
 marimo/_lsp/
