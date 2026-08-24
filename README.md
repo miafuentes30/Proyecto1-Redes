@@ -1,31 +1,46 @@
 # Proyecto 1 - Redes
 
-Chatbot de consola que funcionará como anfitrión de servidores MCP. El proyecto
-implementará manualmente el protocolo MCP mediante mensajes JSON-RPC 2.0, sin
-utilizar SDK o frameworks de MCP.
+## Servidor MCP local de mesa de ayuda
 
-## Estado actual
+Este proyecto implementa un servidor MCP local para un sistema básico de soporte técnico empresarial.
 
-El proyecto contiene una capa manual JSON-RPC 2.0 y un servidor MCP local
-compatible con la versión `2025-11-25`. El servidor admite `initialize`,
-`notifications/initialized`, `tools/list` y `tools/call` mediante `stdin` y
-`stdout`.
+El protocolo MCP está implementado manualmente mediante JSON-RPC 2.0; utiliza la versión `2025-11-25` de MCP y se comunica localmente mediante `stdin` y `stdout`.
 
-Las herramientas `create_ticket`, `get_ticket`, `list_tickets` y
-`update_ticket_status` utilizan persistencia local SQLite. El chatbot de consola
-usa la API de Anthropic para preguntas generales y para decidir cuándo ejecutar
-estas herramientas mediante nuestro cliente MCP.
+## Caso de uso
 
-El cliente MCP local inicia el servidor como subproceso, completa la
-inicialización y permite listar o ejecutar herramientas mediante JSON-RPC.
+El servidor está diseñado para empresas que necesitan gestionar solicitudes básicas de soporte técnico.
+
+Permite que un cliente cree, consulte, liste y actualice tickets de soporte.
+
+## Funcionalidades actuales (unicamente MCP)
+
+El servidor MCP local admite los siguientes métodos:
+
+* `initialize`
+* `notifications/initialized`
+* `tools/list`
+* `tools/call`
+
+Herramientas disponibles:
+
+| Herramienta            | Propósito                        |
+| ---------------------- | -------------------------------- |
+| `create_ticket`        | Crea un nuevo ticket de soporte  |
+| `get_ticket`           | Obtiene un ticket mediante su ID |
+| `list_tickets`         | Lista los tickets existentes     |
+| `update_ticket_status` | Actualiza el estado de un ticket |
+
+La información de los tickets se almacena localmente mediante SQLite.
+
+El proyecto también incluye un cliente MCP local que inicia el servidor como un subproceso y se comunica con él mediante JSON-RPC.
 
 ## Requisitos
 
-- Python 3.11 o posterior.
+* Python 3.11 o una versión posterior
 
-## Preparación
+## Configuración
 
-Desde PowerShell, en la raíz del proyecto:
+Desde PowerShell, abre el directorio del proyecto y ejecuta:
 
 ```powershell
 python -m venv .venv
@@ -33,54 +48,121 @@ python -m venv .venv
 python -m pip install -r requirements.txt
 ```
 
-## Ejecución
+## Ejecutar la demostración local de MCP
 
-Configure la API key en la sesión actual de PowerShell:
-
-```powershell
-$env:ANTHROPIC_API_KEY = "su-api-key"
-```
-
-Opcionalmente, puede seleccionar otro modelo:
-
-```powershell
-$env:ANTHROPIC_MODEL = "claude-sonnet-5"
-```
-
-Inicie el chatbot:
-
-```powershell
-python main.py
-```
-
-El historial se conserva solamente en memoria mientras el programa está
-abierto. Escriba `limpiar` para borrar el contexto actual o `salir` para cerrar
-la sesión.
-
-Para iniciar el servidor MCP local:
-
-```powershell
-python -m support_server.server
-```
-
-El servidor espera un mensaje JSON-RPC completo por línea. Para finalizarlo,
-presione `Ctrl+Z` y luego `Enter` en PowerShell.
-
-Para ejecutar la demostración completa del cliente local:
+La forma más facil de probar el servidor MCP local es ejecutar:
 
 ```powershell
 python -m mcp_client.demo
 ```
 
-Las interacciones se guardan en `logs/mcp_interactions.log`. Para mostrarlas
-también durante la demostración:
+La demostración realiza automáticamente lo siguiente:
+
+1. Inicia el servidor MCP local.
+2. Realiza la inicialización de MCP.
+3. Lista las herramientas disponibles.
+4. Crea un ticket de soporte.
+5. Obtiene el ticket creado.
+6. Cierra el servidor.
+
+Para mostrar también las interacciones JSON-RPC, ejecuta:
 
 ```powershell
 python -m mcp_client.demo --mostrar-interacciones
 ```
 
+Las interacciones se almacenan en:
+
+```text
+logs/mcp_interactions.log
+```
+
+Los test del MCP local son:
+```text
+python -m unittest tests.test_json_rpc tests.test_support_server tests.test_mcp_tools tests.test_ticket_service tests.test_mcp_client tests.test_interaction_logging
+```
+
+## Ejecutar manualmente el servidor MCP
+
+El servidor también puede iniciarse directamente:
+
+```powershell
+python -m support_server.server
+```
+
+El servidor espera recibir un mensaje JSON-RPC por línea mediante la entrada estándar.
+
+Para detenerlo desde PowerShell:
+
+```text
+Ctrl + Z
+Enter
+```
+
+## Parámetros de las herramientas
+
+### `create_ticket`
+
+Parámetros:
+
+* `usuario`: nombre del usuario
+* `descripcion`: descripción del problema técnico
+* `prioridad`: `low`, `medium` o `high`
+
+Ejemplo:
+
+```json
+{
+  "name": "create_ticket",
+  "arguments": {
+    "usuario": "Mia",
+    "descripcion": "La computadora no puede conectarse a la red",
+    "prioridad": "high"
+  }
+}
+```
+
+### `get_ticket`
+
+Parámetros:
+
+* `id`: ID del ticket
+
+### `list_tickets`
+
+No requiere parámetros.
+
+### `update_ticket_status`
+
+Parámetros:
+
+* `id`: ID del ticket
+* `estado`: `open`, `in_progress` o `closed`
+
 ## Pruebas
+
+Para ejecutar todas las pruebas:
 
 ```powershell
 python -m unittest discover -s tests
 ```
+
+## Arquitectura del MCP local
+
+support_server/
+├── __init__.py
+├── config.py
+├── server.py
+├── ticket_service.py
+└── tools.py
+
+database/
+├── __init__.py
+└── ticket_repository.py
+
+mcp_client/
+├── __init__.py
+├── json_rpc.py
+├── client.py
+├── demo.py
+└── interaction_logging.py
